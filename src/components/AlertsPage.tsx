@@ -49,17 +49,17 @@ export default function AlertsPage({ alerts, faults }: AlertsPageProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-2xl font-bold flex items-center gap-3 t-text-primary">
             <Bell className="w-7 h-7 text-cyan-400" />
             Alerts
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm mt-1 t-text-dim">
             Active fault detections and system warnings
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1 bg-slate-900/50 rounded-xl p-1 border border-slate-800/50" id="alert-filter-tabs">
+        <div className="flex items-center gap-1 rounded-xl p-1" style={{ background: 'var(--t-input-bg)', border: '1px solid var(--t-border)' }} id="alert-filter-tabs">
           {(['all', 'critical', 'warning'] as SeverityFilter[]).map((f) => (
             <button
               key={f}
@@ -71,8 +71,9 @@ export default function AlertsPage({ alerts, faults }: AlertsPageProps) {
                     : f === 'warning'
                     ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                     : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                  : 'border border-transparent'
               }`}
+              style={filter !== f ? { color: 'var(--t-text-dim)' } : undefined}
             >
               {f === 'all' ? `All (${alerts.length})` : `${f} (${f === 'critical' ? criticalCount : warningCount})`}
             </button>
@@ -87,7 +88,7 @@ export default function AlertsPage({ alerts, faults }: AlertsPageProps) {
             <ShieldAlert className="w-5 h-5 text-red-400" />
           </div>
           <div>
-            <span className="text-[10px] text-slate-500 uppercase">Critical</span>
+            <span className="text-[10px] uppercase t-text-dim">Critical</span>
             <p className="text-xl font-bold text-red-400" style={{ fontFamily: 'var(--font-mono)' }}>{criticalCount}</p>
           </div>
         </div>
@@ -96,7 +97,7 @@ export default function AlertsPage({ alerts, faults }: AlertsPageProps) {
             <AlertTriangle className="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <span className="text-[10px] text-slate-500 uppercase">Warning</span>
+            <span className="text-[10px] uppercase t-text-dim">Warning</span>
             <p className="text-xl font-bold text-amber-400" style={{ fontFamily: 'var(--font-mono)' }}>{warningCount}</p>
           </div>
         </div>
@@ -105,9 +106,9 @@ export default function AlertsPage({ alerts, faults }: AlertsPageProps) {
       {/* Alerts List */}
       {filteredAlerts.length === 0 ? (
         <div className="glass-card p-12 rounded-2xl text-center">
-          <AlertCircle className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No Alerts</h3>
-          <p className="text-sm text-slate-500">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--t-text-faint)' }} />
+          <h3 className="text-lg font-semibold mb-2 t-text-primary">No Alerts</h3>
+          <p className="text-sm t-text-dim">
             {filter === 'all' ? 'All systems operating within normal parameters.' : `No ${filter} severity alerts at this time.`}
           </p>
         </div>
@@ -130,17 +131,17 @@ export default function AlertsPage({ alerts, faults }: AlertsPageProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-sm font-semibold text-white">{alert.faultType}</h3>
+                      <h3 className="text-sm font-semibold t-text-primary">{alert.faultType}</h3>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${config.badge}`}>
                         {config.label}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800/50 text-slate-400 border border-slate-700/30">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium t-text-muted" style={{ background: 'var(--t-input-bg)', border: '1px solid var(--t-border)' }}>
                         {getSensorLabel(alert.sensor)}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-400 mt-1">{alert.message}</p>
-                    <p className="text-xs text-slate-600 mt-2 flex items-center gap-1.5">
-                      <span className="inline-block w-1 h-1 rounded-full bg-slate-600" />
+                    <p className="text-sm mt-1 t-text-muted">{alert.message}</p>
+                    <p className="text-xs mt-2 flex items-center gap-1.5 t-text-faint">
+                      <span className="inline-block w-1 h-1 rounded-full" style={{ background: 'var(--t-text-faint)' }} />
                       {formatTimestamp(alert.timestamp)}
                     </p>
                   </div>

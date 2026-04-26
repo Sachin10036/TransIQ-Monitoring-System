@@ -63,11 +63,11 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-2xl font-bold flex items-center gap-3 t-text-primary">
             <BrainCircuit className="w-7 h-7 text-cyan-400" />
             Predictive Analysis
           </h1>
-          <p className="text-sm text-slate-500 mt-1">AI-powered trend analysis and early warning system</p>
+          <p className="text-sm mt-1 t-text-dim">AI-powered trend analysis and early warning system</p>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
               <ShieldAlert className="w-5 h-5 text-red-400" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider">High Risk</span>
+              <span className="text-[10px] uppercase tracking-wider t-text-dim">High Risk</span>
               <p className="text-2xl font-bold text-red-400" style={{ fontFamily: 'var(--font-mono)' }}>
                 {highRisk}
               </p>
@@ -92,7 +92,7 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
               <AlertTriangle className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider">Medium Risk</span>
+              <span className="text-[10px] uppercase tracking-wider t-text-dim">Medium Risk</span>
               <p className="text-2xl font-bold text-amber-400" style={{ fontFamily: 'var(--font-mono)' }}>
                 {mediumRisk}
               </p>
@@ -105,7 +105,7 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
               <ShieldCheck className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider">Low Risk</span>
+              <span className="text-[10px] uppercase tracking-wider t-text-dim">Low Risk</span>
               <p className="text-2xl font-bold text-emerald-400" style={{ fontFamily: 'var(--font-mono)' }}>
                 {lowRisk}
               </p>
@@ -118,8 +118,8 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
       {predictions.length === 0 ? (
         <div className="glass-card p-12 rounded-2xl text-center">
           <ShieldCheck className="w-16 h-16 text-emerald-400/30 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">All Systems Clear</h3>
-          <p className="text-sm text-slate-500">
+          <h3 className="text-lg font-semibold mb-2 t-text-primary">All Systems Clear</h3>
+          <p className="text-sm t-text-dim">
             No predictive warnings at this time. All sensor trends are within expected parameters.
           </p>
         </div>
@@ -146,12 +146,12 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-base font-semibold text-white">{prediction.title}</h3>
+                      <h3 className="text-base font-semibold t-text-primary">{prediction.title}</h3>
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${risk.badge}`}>
                         {risk.label}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-400 leading-relaxed mb-3">{prediction.message}</p>
+                    <p className="text-sm leading-relaxed mb-3 t-text-muted">{prediction.message}</p>
 
                     {/* Warning Indicator */}
                     <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
 
                   {/* Risk Meter */}
                   <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                    <div className="w-8 h-24 rounded-full bg-slate-800/80 relative overflow-hidden">
+                    <div className="w-8 h-24 rounded-full relative overflow-hidden" style={{ background: 'var(--t-input-bg)' }}>
                       <div
                         className={`absolute bottom-0 w-full rounded-full transition-all duration-500 ${
                           prediction.riskLevel === 'high'
@@ -187,7 +187,7 @@ export default function PredictionsPage({ predictions }: PredictionsPageProps) {
                         }}
                       />
                     </div>
-                    <span className="text-[9px] text-slate-600 uppercase">Risk</span>
+                    <span className="text-[9px] uppercase t-text-faint">Risk</span>
                   </div>
                 </div>
               </div>

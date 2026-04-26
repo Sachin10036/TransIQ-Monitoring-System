@@ -1,49 +1,23 @@
 import { SensorData, FaultStatus, Prediction, Alert, HistoricalDataPoint, SystemStatus } from './types';
 
-// ── MPU6050 Vibration Computation ────────────────────────────────────────
+// ── Enrich SensorData ────────────────────────────────────────────────────
 /**
- * Compute vibration magnitude from MPU6050 accelerometer data.
- * If ax/ay/az are not available from API, simulate values from the binary vibration flag.
- * When real MPU6050 data is available, simply pass ax/ay/az directly.
- */
-export function computeVibrationMagnitude(data: SensorData): number {
-  let ax = data.ax;
-  let ay = data.ay;
-  let az = data.az;
-
-  if (ax === undefined || ay === undefined || az === undefined) {
-    // Simulate MPU6050 values from binary vibration flag
-    if (data.vibration === 1) {
-      // Abnormal vibration — simulate high magnitude
-      ax = 1.8 + Math.random() * 1.2;
-      ay = 0.8 + Math.random() * 0.6;
-      az = 1.0 + Math.random() * 0.8;
-    } else {
-      // Normal — simulate idle accelerometer near 1g
-      ax = 0.02 + Math.random() * 0.15;
-      ay = 0.02 + Math.random() * 0.1;
-      az = 0.95 + Math.random() * 0.1;
-    }
-  }
-
-  return Math.sqrt(ax * ax + ay * ay + az * az);
-}
-
-/**
- * Enrich SensorData with computed vibration magnitude.
+ * Enrich SensorData — ensures vibration is always a proper float.
  * Call this after fetching data from the API.
  */
 export function enrichSensorData(data: SensorData): SensorData {
+  // Ensure vibration is always a proper float (API may return string or integer)
+  const vibrationFloat = parseFloat(String(data.vibration));
   return {
     ...data,
-    vibration_magnitude: computeVibrationMagnitude(data),
+    vibration: isNaN(vibrationFloat) ? 0 : vibrationFloat,
   };
 }
 
 // ── Fault Detection (Updated Thresholds) ─────────────────────────────────
-export function detectFaults(data: SensorData, oilHistory?: number[]): FaultStatus[] {
+export function detectFaults(data: SensorData): FaultStatus[] {
   const faults: FaultStatus[] = [];
-  const vibMag = data.vibration_magnitude ?? computeVibrationMagnitude(data);
+  const vib = data.vibration;
 
   // Temperature (°C): Normal 30–60, Warning 60–80, Critical >80
   if (data.temperature > 80) {
@@ -94,34 +68,14 @@ export function detectFaults(data: SensorData, oilHistory?: number[]): FaultStat
     faults.push({ sensor: 'current_a', status: 'normal', message: 'Current normal (0–12A)' });
   }
 
-  // Oil Level (cm): Use trend from history
-  if (oilHistory && oilHistory.length >= 3) {
-    const trend = calculateTrend(oilHistory.slice(-10));
-    if (trend > 2) {
-      faults.push({ sensor: 'oil_distance_cm', status: 'critical', message: 'Oil leakage suspected — continuous increasing distance' });
-    } else if (trend > 0.5) {
-      faults.push({ sensor: 'oil_distance_cm', status: 'warning', message: 'Oil level decreasing — slight trend detected' });
-    } else {
-      faults.push({ sensor: 'oil_distance_cm', status: 'normal', message: 'Oil level stable' });
-    }
+  // Vibration: Normal <1.2, Warning 1.2–2.5, Critical >2.5
+  const absVib = Math.abs(vib);
+  if (absVib > 2.5) {
+    faults.push({ sensor: 'vibration', status: 'critical', message: `Abnormal vibration detected (${vib.toFixed(2)}g)` });
+  } else if (absVib > 1.2) {
+    faults.push({ sensor: 'vibration', status: 'warning', message: `Vibration elevated (${vib.toFixed(2)}g)` });
   } else {
-    // Fallback without history
-    if (data.oil_distance_cm > 150) {
-      faults.push({ sensor: 'oil_distance_cm', status: 'critical', message: 'Oil level critical — possible leakage' });
-    } else if (data.oil_distance_cm > 120) {
-      faults.push({ sensor: 'oil_distance_cm', status: 'warning', message: 'Oil level low' });
-    } else {
-      faults.push({ sensor: 'oil_distance_cm', status: 'normal', message: 'Oil level normal' });
-    }
-  }
-
-  // Vibration (MPU6050): Normal <1.2, Warning 1.2–2.5, Critical >2.5
-  if (vibMag > 2.5) {
-    faults.push({ sensor: 'vibration', status: 'critical', message: `Abnormal vibration detected (${vibMag.toFixed(2)}g)` });
-  } else if (vibMag > 1.2) {
-    faults.push({ sensor: 'vibration', status: 'warning', message: `Vibration elevated (${vibMag.toFixed(2)}g)` });
-  } else {
-    faults.push({ sensor: 'vibration', status: 'normal', message: `Vibration normal (${vibMag.toFixed(2)}g)` });
+    faults.push({ sensor: 'vibration', status: 'normal', message: `Vibration normal (${vib.toFixed(2)}g)` });
   }
 
   return faults;
@@ -137,7 +91,7 @@ export function getGlobalSystemStatus(faults: FaultStatus[]): SystemStatus {
 // ── Health Score (Updated Thresholds) ────────────────────────────────────
 export function calculateHealthScore(data: SensorData): number {
   let score = 100;
-  const vibMag = data.vibration_magnitude ?? computeVibrationMagnitude(data);
+  const absVib = Math.abs(data.vibration);
 
   // Temperature penalty
   if (data.temperature > 80) score -= 25;
@@ -159,13 +113,9 @@ export function calculateHealthScore(data: SensorData): number {
   if (data.current_a > 15) score -= 20;
   else if (data.current_a > 12) score -= 8;
 
-  // Vibration penalty (MPU6050)
-  if (vibMag > 2.5) score -= 20;
-  else if (vibMag > 1.2) score -= 10;
-
-  // Oil penalty
-  if (data.oil_distance_cm > 150) score -= 15;
-  else if (data.oil_distance_cm > 120) score -= 8;
+  // Vibration penalty
+  if (absVib > 2.5) score -= 20;
+  else if (absVib > 1.2) score -= 10;
 
   return Math.max(0, Math.min(100, score));
 }
@@ -182,19 +132,6 @@ export function generatePredictions(history: HistoricalDataPoint[]): Prediction[
   if (history.length < 5) return predictions;
 
   const recent = history.slice(-10);
-
-  // Oil Level Prediction
-  const oilTrend = calculateTrend(recent.map(d => d.oil_distance_cm));
-  if (oilTrend > 0.5) {
-    predictions.push({
-      id: 'oil-leak',
-      title: 'Possible Oil Leakage',
-      message: 'Oil level sensor shows continuous decrease in oil reserves. Distance readings increasing steadily — potential slow leak detected.',
-      riskLevel: oilTrend > 2 ? 'high' : oilTrend > 1 ? 'medium' : 'low',
-      sensor: 'oil_distance_cm',
-      icon: 'droplet',
-    });
-  }
 
   // Temperature Trend
   const tempTrend = calculateTrend(recent.map(d => d.temperature));
@@ -289,7 +226,6 @@ const alertTitleMap: Record<string, { warning: string; critical: string }> = {
   gas_ppm: { warning: 'Gas Level Warning', critical: 'Gas Level High' },
   voltage_v: { warning: 'Voltage Warning', critical: 'Voltage Fault' },
   current_a: { warning: 'Current Warning', critical: 'Overload Condition' },
-  oil_distance_cm: { warning: 'Oil Level Warning', critical: 'Oil Leakage Suspected' },
   vibration: { warning: 'Vibration Warning', critical: 'Abnormal Vibration Detected' },
 };
 
@@ -324,7 +260,6 @@ export function getSensorLabel(key: string): string {
     gas_ppm: 'Gas (PPM)',
     current_a: 'Current (A)',
     voltage_v: 'Voltage (V)',
-    oil_distance_cm: 'Oil Level (cm)',
     vibration: 'Vibration',
   };
   return labels[key] || key;
@@ -354,5 +289,5 @@ export const thresholdConfig: Record<string, { warning: number; critical: number
   gas_ppm: { warning: 300, critical: 400 },
   voltage_v: { warningLow: 220, warning: 240, criticalLow: 200, critical: 250 },
   current_a: { warning: 12, critical: 15 },
-  vibration_magnitude: { warning: 1.2, critical: 2.5 },
+  vibration: { warning: 1.2, critical: 2.5 },
 };

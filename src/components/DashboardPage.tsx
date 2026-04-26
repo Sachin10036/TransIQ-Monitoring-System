@@ -24,7 +24,6 @@ const sensorConfig = [
   { key: 'gas_ppm', label: 'Gas Level', unit: 'PPM' },
   { key: 'current_a', label: 'Current', unit: 'A' },
   { key: 'voltage_v', label: 'Voltage', unit: 'V' },
-  { key: 'oil_distance_cm', label: 'Oil Distance', unit: 'cm' },
   { key: 'vibration', label: 'Vibration', unit: 'g' },
 ];
 
@@ -99,7 +98,7 @@ export default function DashboardPage({
           <h3 className={`text-sm font-bold uppercase tracking-wider ${config.textColor}`}>
             {config.label}
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">{config.description}</p>
+          <p className="text-xs mt-0.5 t-text-muted">{config.description}</p>
         </div>
         {activeFaults.length > 0 && (
           <span
@@ -117,8 +116,8 @@ export default function DashboardPage({
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Real-time sensor monitoring overview</p>
+          <h1 className="text-2xl font-bold t-text-primary">Dashboard</h1>
+          <p className="text-sm mt-1 t-text-dim">Real-time sensor monitoring overview</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {/* Live Data Indicator */}
@@ -142,7 +141,7 @@ export default function DashboardPage({
               )}
             </div>
             {lastUpdated && (
-              <span className="text-[10px] text-slate-500 border-l border-slate-700 pl-2 ml-1">
+              <span className="text-[10px] pl-2 ml-1 t-text-dim" style={{ borderLeft: '1px solid var(--t-border)' }}>
                 {secondsAgo < 5 ? 'Just now' : `${secondsAgo}s ago`}
               </span>
             )}
@@ -150,8 +149,8 @@ export default function DashboardPage({
 
           {/* Auto Refresh Toggle */}
           <div className="glass-card px-4 py-2.5 flex items-center gap-2.5 rounded-xl" id="auto-refresh-toggle">
-            <Radio className="w-4 h-4 text-slate-400" />
-            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Auto Refresh</span>
+            <Radio className="w-4 h-4 t-text-muted" />
+            <span className="text-[10px] uppercase tracking-wider t-text-dim">Auto Refresh</span>
             <button
               onClick={onToggleAutoRefresh}
               className={`toggle-track ${autoRefresh ? 'toggle-track-on' : 'toggle-track-off'}`}
@@ -159,7 +158,7 @@ export default function DashboardPage({
             >
               <span className={`toggle-thumb ${autoRefresh ? 'toggle-thumb-on' : 'toggle-thumb-off'}`} />
             </button>
-            <span className={`text-[10px] font-bold ${autoRefresh ? 'text-emerald-400' : 'text-slate-500'}`}>
+            <span className={`text-[10px] font-bold ${autoRefresh ? 'text-emerald-400' : 't-text-dim'}`}>
               {autoRefresh ? 'ON' : 'OFF'}
             </span>
           </div>
@@ -168,8 +167,8 @@ export default function DashboardPage({
           <div className="glass-card px-4 py-2.5 flex items-center gap-2.5 rounded-xl">
             <Shield className="w-4 h-4 text-cyan-400" />
             <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Device</span>
-              <span className="text-sm font-semibold text-white" style={{ fontFamily: 'var(--font-mono)' }}>
+              <span className="text-[10px] uppercase tracking-wider block t-text-dim">Device</span>
+              <span className="text-sm font-semibold t-text-primary" style={{ fontFamily: 'var(--font-mono)' }}>
                 {data.device_id}
               </span>
             </div>
@@ -177,10 +176,10 @@ export default function DashboardPage({
 
           {/* Last Updated */}
           <div className="glass-card px-4 py-2.5 flex items-center gap-2.5 rounded-xl">
-            <Clock className="w-4 h-4 text-slate-400" />
+            <Clock className="w-4 h-4 t-text-muted" />
             <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Last Updated</span>
-              <span className="text-xs font-medium text-slate-300">{formatTimestamp(data.timestamp)}</span>
+              <span className="text-[10px] uppercase tracking-wider block t-text-dim">Last Updated</span>
+              <span className="text-xs font-medium t-text-secondary">{formatTimestamp(data.timestamp)}</span>
             </div>
           </div>
 
@@ -192,7 +191,7 @@ export default function DashboardPage({
               <WifiOff className="w-4 h-4 text-red-400" />
             )}
             <div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Status</span>
+              <span className="text-[10px] uppercase tracking-wider block t-text-dim">Status</span>
               <span
                 className={`text-xs font-semibold ${
                   connectionStatus === 'connected'
@@ -222,11 +221,7 @@ export default function DashboardPage({
               <div key={sensor.key} className="slide-up" style={{ animationDelay: `${index * 80}ms` }}>
                 <SensorCard
                   label={sensor.label}
-                  value={
-                    sensor.key === 'vibration'
-                      ? (data.vibration_magnitude ?? 0)
-                      : (data[sensor.key as keyof SensorData] as number)
-                  }
+                  value={data[sensor.key as keyof SensorData] as number}
                   unit={sensor.unit}
                   sensorKey={sensor.key}
                   fault={faults.find((f) => f.sensor === sensor.key)}
@@ -240,13 +235,13 @@ export default function DashboardPage({
         <div className="space-y-4">
           {/* Health Score */}
           <div className="glass-card p-6 rounded-2xl flex flex-col items-center" id="health-score-card">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">System Health</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-4 t-text-dim">System Health</h3>
             <HealthRing score={healthScore} />
           </div>
 
           {/* Fault Panel */}
           <div className="glass-card p-5 rounded-2xl" id="fault-panel">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Diagnostics</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3 t-text-dim">Diagnostics</h3>
             <div className="space-y-2">
               {faults.map((fault) => (
                 <div
@@ -256,8 +251,9 @@ export default function DashboardPage({
                       ? 'bg-red-500/5 border border-red-500/10'
                       : fault.status === 'warning'
                       ? 'bg-amber-500/5 border border-amber-500/10'
-                      : 'bg-slate-900/50'
+                      : ''
                   }`}
+                  style={fault.status === 'normal' ? { background: 'var(--t-input-bg)' } : undefined}
                 >
                   <div
                     className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -268,7 +264,7 @@ export default function DashboardPage({
                         : 'bg-emerald-400'
                     }`}
                   />
-                  <span className="text-xs text-slate-400 flex-1 truncate">
+                  <span className="text-xs flex-1 truncate t-text-muted">
                     {fault.message}
                   </span>
                   <span

@@ -17,6 +17,7 @@ import AnalyticsPage from '@/components/AnalyticsPage';
 import PredictionsPage from '@/components/PredictionsPage';
 import AlertsPage from '@/components/AlertsPage';
 import DeviceInfoPage from '@/components/DeviceInfoPage';
+import SoundAlertProvider from '@/components/SoundAlertProvider';
 
 const API_URL = 'https://17eznckrdf.execute-api.eu-north-1.amazonaws.com/data';
 const POLL_INTERVAL_MS = 4000; // 4 seconds
@@ -63,7 +64,7 @@ export default function Home() {
         throw new Error('Invalid API response format');
       }
 
-      // Enrich with MPU6050 vibration magnitude
+      // Enrich — ensures vibration is a proper float
       const enriched = enrichSensorData(latestRecord);
 
       setSensorData(enriched);
@@ -83,9 +84,7 @@ export default function Home() {
           gas_ppm: enriched.gas_ppm,
           current_a: enriched.current_a,
           voltage_v: enriched.voltage_v,
-          oil_distance_cm: enriched.oil_distance_cm,
           vibration: enriched.vibration,
-          vibration_magnitude: enriched.vibration_magnitude,
         };
 
         const updated = [...prev, newPoint];
@@ -164,13 +163,10 @@ export default function Home() {
     month: generateMonthData(),
   }), []);
 
-  // Oil history for trend-based fault detection
-  const oilHistory = useMemo(() => historicalBuffer.map((h) => h.oil_distance_cm), [historicalBuffer]);
-
   // Derived state
   const faults = useMemo<FaultStatus[]>(
-    () => (sensorData ? detectFaults(sensorData, oilHistory) : []),
-    [sensorData, oilHistory]
+    () => (sensorData ? detectFaults(sensorData) : []),
+    [sensorData]
   );
 
   const healthScore = useMemo(
@@ -212,13 +208,13 @@ export default function Home() {
   // Loading screen
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+      <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--t-bg)' }}>
         <div className="text-center">
           <div className="relative mb-6">
-            <div className="w-16 h-16 border-4 border-slate-800 border-t-cyan-400 rounded-full animate-spin-slow mx-auto" />
+            <div className="w-16 h-16 border-4 border-t-cyan-400 rounded-full animate-spin-slow mx-auto" style={{ borderColor: 'var(--t-border)', borderTopColor: '#22d3ee' }} />
           </div>
-          <h2 className="text-xl font-semibold text-slate-300 mb-2">TransIQ Monitoring System</h2>
-          <p className="text-sm text-slate-500">Connecting to sensors...</p>
+          <h2 className="text-xl font-semibold mb-2 t-text-secondary">TransIQ Monitoring System</h2>
+          <p className="text-sm t-text-dim">Connecting to sensors...</p>
         </div>
       </div>
     );
@@ -227,7 +223,7 @@ export default function Home() {
   // Error screen (only on initial load failure)
   if (error && !sensorData) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+      <div className="flex items-center justify-center min-h-screen" style={{ background: 'var(--t-bg)' }}>
         <div className="glass-card p-8 max-w-md text-center">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -235,7 +231,7 @@ export default function Home() {
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-red-400 mb-2">Connection Failed</h2>
-          <p className="text-sm text-slate-400 mb-4">{error}</p>
+          <p className="text-sm t-text-muted mb-4">{error}</p>
           <button
             onClick={() => {
               setError(null);
@@ -297,23 +293,25 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
-      <Sidebar
-        activePage={activePage}
-        onPageChange={setActivePage}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        alertCount={alertHistory.length}
-        systemStatus={globalStatus}
-      />
-      <main
-        className="flex-1 transition-all duration-300 ease-in-out"
-        style={{ marginLeft: sidebarOpen ? '260px' : '72px' }}
-      >
-        <div className="p-6 max-w-[1600px] mx-auto">
-          {renderPage()}
-        </div>
-      </main>
-    </div>
+    <SoundAlertProvider systemStatus={globalStatus}>
+      <div className="flex min-h-screen" style={{ background: 'var(--t-bg)' }}>
+        <Sidebar
+          activePage={activePage}
+          onPageChange={setActivePage}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          alertCount={alertHistory.length}
+          systemStatus={globalStatus}
+        />
+        <main
+          className="flex-1 transition-all duration-300 ease-in-out"
+          style={{ marginLeft: sidebarOpen ? '260px' : '72px' }}
+        >
+          <div className="p-6 max-w-[1600px] mx-auto">
+            {renderPage()}
+          </div>
+        </main>
+      </div>
+    </SoundAlertProvider>
   );
 }

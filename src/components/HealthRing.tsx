@@ -31,7 +31,7 @@ export default function HealthRing({ score, size = 160, strokeWidth = 10 }: Heal
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="rgba(100, 116, 139, 0.15)"
+            stroke="var(--t-ring-track)"
             strokeWidth={strokeWidth}
           />
           {/* Progress ring */}
@@ -56,7 +56,7 @@ export default function HealthRing({ score, size = 160, strokeWidth = 10 }: Heal
           <span className={`text-3xl font-bold ${color.text}`} style={{ fontFamily: 'var(--font-mono)' }}>
             {score}%
           </span>
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Health</span>
+          <span className="text-[10px] uppercase tracking-widest mt-1 t-text-dim">Health</span>
         </div>
       </div>
       <span className={`text-sm font-semibold ${color.text}`}>{color.label}</span>

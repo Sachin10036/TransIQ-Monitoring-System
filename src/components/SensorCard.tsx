@@ -8,7 +8,6 @@ import {
   Wind,
   Zap,
   Gauge,
-  Fuel,
   Activity,
 } from 'lucide-react';
 
@@ -26,7 +25,6 @@ const iconMap: Record<string, React.ElementType> = {
   gas_ppm: Wind,
   current_a: Zap,
   voltage_v: Gauge,
-  oil_distance_cm: Fuel,
   vibration: Activity,
 };
 
@@ -55,11 +53,6 @@ const colorMap: Record<string, { gradient: string; iconBg: string; iconColor: st
     gradient: 'from-cyan-500/10 to-teal-500/5',
     iconBg: 'bg-cyan-500/10',
     iconColor: 'text-cyan-400',
-  },
-  oil_distance_cm: {
-    gradient: 'from-emerald-500/10 to-green-500/5',
-    iconBg: 'bg-emerald-500/10',
-    iconColor: 'text-emerald-400',
   },
   vibration: {
     gradient: 'from-orange-500/10 to-amber-500/5',
@@ -120,7 +113,7 @@ export default function SensorCard({ label, value, unit, sensorKey, fault }: Sen
       </div>
 
       <div className="mb-1">
-        <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-wider t-text-dim">{label}</span>
       </div>
 
       <div className="flex items-baseline gap-1.5">
@@ -130,18 +123,18 @@ export default function SensorCard({ label, value, unit, sensorKey, fault }: Sen
               ? 'text-red-400'
               : status === 'warning'
               ? 'text-amber-400'
-              : 'text-white'
+              : 't-text-primary'
           }`}
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           {displayValue}
         </span>
-        <span className="text-sm text-slate-500">{unit}</span>
+        <span className="text-sm t-text-dim">{unit}</span>
       </div>
 
       {fault && fault.status !== 'normal' && (
-        <div className="mt-3 pt-3 border-t border-slate-800/50">
-          <p className="text-[11px] text-slate-400 leading-relaxed">{fault.message}</p>
+        <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--t-border)' }}>
+          <p className="text-[11px] leading-relaxed t-text-muted">{fault.message}</p>
         </div>
       )}
     </div>

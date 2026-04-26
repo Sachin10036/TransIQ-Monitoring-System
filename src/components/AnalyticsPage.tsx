@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { HistoricalDataPoint } from '@/lib/types';
 import { getStats, calculateTrend, thresholdConfig } from '@/lib/utils';
+import { useTheme } from './ThemeProvider';
 import {
   XAxis,
   YAxis,
@@ -25,9 +26,8 @@ const chartConfigs = [
   { key: 'voltage_v', label: 'Voltage', unit: 'V', color: '#22d3ee', glowColor: 'rgba(34,211,238,0.5)', gradientId: 'voltGrad', glowId: 'voltGlow' },
   { key: 'current_a', label: 'Current', unit: 'A', color: '#fbbf24', glowColor: 'rgba(251,191,36,0.5)', gradientId: 'currGrad', glowId: 'currGlow' },
   { key: 'gas_ppm', label: 'Gas Level', unit: 'PPM', color: '#a78bfa', glowColor: 'rgba(167,139,250,0.5)', gradientId: 'gasGrad', glowId: 'gasGlow' },
-  { key: 'oil_distance_cm', label: 'Oil Level', unit: 'cm', color: '#34d399', glowColor: 'rgba(52,211,153,0.5)', gradientId: 'oilGrad', glowId: 'oilGlow' },
   { key: 'humidity', label: 'Humidity', unit: '%', color: '#60a5fa', glowColor: 'rgba(96,165,250,0.5)', gradientId: 'humGrad', glowId: 'humGlow' },
-  { key: 'vibration_magnitude', label: 'Vibration (MPU6050)', unit: 'g', color: '#fb923c', glowColor: 'rgba(251,146,60,0.5)', gradientId: 'vibGrad', glowId: 'vibGlow' },
+  { key: 'vibration', label: 'Vibration', unit: 'g', color: '#fb923c', glowColor: 'rgba(251,146,60,0.5)', gradientId: 'vibGrad', glowId: 'vibGlow' },
 ];
 
 const timeFilters = [
@@ -44,23 +44,23 @@ function formatChartTime(ts: string, filter: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// ── Premium Tooltip with crosshair styling ──────────────────────────────
+// ── Premium Tooltip with theme-aware styling ────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) return null;
   return (
     <div
       style={{
-        background: 'linear-gradient(135deg, rgba(26, 35, 50, 0.95), rgba(15, 23, 41, 0.98))',
+        background: 'var(--t-tooltip-bg)',
         backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(34, 211, 238, 0.15)',
+        border: '1px solid var(--t-tooltip-border)',
         borderRadius: '14px',
         padding: '12px 16px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(34, 211, 238, 0.06)',
+        boxShadow: 'var(--t-tooltip-shadow)',
         minWidth: '160px',
       }}
     >
-      <p style={{ fontSize: '10px', color: '#64748b', marginBottom: '8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+      <p style={{ fontSize: '10px', color: 'var(--t-text-dim)', marginBottom: '8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
         {label}
       </p>
       {payload.map((entry: { name: string; value: number; color: string }, i: number) => (
@@ -74,7 +74,7 @@ function CustomTooltip({ active, payload, label }: any) {
               boxShadow: `0 0 6px ${entry.color}`,
             }}
           />
-          <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
+          <span style={{ fontSize: '12px', color: 'var(--t-text-secondary)' }}>
             {entry.name}:{' '}
             <strong style={{ color: entry.color, fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
               {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
@@ -98,7 +98,7 @@ function GlowActiveDot(props: any) {
       {/* Mid ring */}
       <circle cx={cx} cy={cy} r={8} fill={stroke} fillOpacity={0.25} />
       {/* Core dot */}
-      <circle cx={cx} cy={cy} r={4} fill="#0a0e1a" stroke={stroke} strokeWidth={2.5} />
+      <circle cx={cx} cy={cy} r={4} fill="var(--t-bg)" stroke={stroke} strokeWidth={2.5} />
     </g>
   );
 }
@@ -124,6 +124,7 @@ function CustomCursor(props: any) {
 
 export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: AnalyticsPageProps) {
   const [timeFilter, setTimeFilter] = useState('realtime');
+  const { theme } = useTheme();
 
   const data = useMemo(() => {
     let raw: HistoricalDataPoint[];
@@ -140,19 +141,23 @@ export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: A
     }));
   }, [historicalData, realtimeBuffer, timeFilter]);
 
+  const chartGridColor = theme === 'light' ? 'rgba(100,116,139,0.06)' : 'rgba(100,116,139,0.08)';
+  const chartAxisColor = theme === 'light' ? 'rgba(100,116,139,0.15)' : 'rgba(100,116,139,0.12)';
+  const chartTickColor = theme === 'light' ? '#64748B' : '#475569';
+
   return (
     <div className="space-y-6 fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Analytics</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold t-text-primary">Analytics</h1>
+          <p className="text-sm mt-1 t-text-dim">
             {timeFilter === 'realtime' ? 'Live data stream (last 20 readings)' : 'Historical trends and statistical analysis'}
           </p>
         </div>
 
         {/* Time Filters */}
-        <div className="flex items-center gap-1 bg-slate-900/50 rounded-xl p-1 border border-slate-800/50" id="time-filter-tabs">
+        <div className="flex items-center gap-1 rounded-xl p-1" style={{ background: 'var(--t-input-bg)', border: '1px solid var(--t-border)' }} id="time-filter-tabs">
           {timeFilters.map((f) => (
             <button
               key={f.key}
@@ -163,8 +168,9 @@ export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: A
                   ? f.key === 'realtime'
                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                     : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                  : 'border border-transparent'
               }`}
+              style={timeFilter !== f.key ? { color: 'var(--t-text-dim)' } : undefined}
             >
               {f.label}
             </button>
@@ -190,17 +196,17 @@ export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: A
                 <div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: config.color, boxShadow: `0 0 8px ${config.glowColor}` }} />
-                    <h3 className="text-sm font-semibold text-white">{config.label}</h3>
+                    <h3 className="text-sm font-semibold t-text-primary">{config.label}</h3>
                   </div>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-slate-500">
-                      Avg: <span className="text-slate-300" style={{ fontFamily: 'var(--font-mono)' }}>{stats.avg}</span>{' '}
+                    <span className="text-xs t-text-dim">
+                      Avg: <span className="t-text-secondary" style={{ fontFamily: 'var(--font-mono)' }}>{stats.avg}</span>{' '}
                       {config.unit}
                     </span>
-                    <span className="text-xs text-slate-600">|</span>
-                    <span className="text-xs text-slate-500">
-                      Range: <span className="text-slate-300" style={{ fontFamily: 'var(--font-mono)' }}>{stats.min}</span> –{' '}
-                      <span className="text-slate-300" style={{ fontFamily: 'var(--font-mono)' }}>{stats.max}</span>
+                    <span className="text-xs t-text-faint">|</span>
+                    <span className="text-xs t-text-dim">
+                      Range: <span className="t-text-secondary" style={{ fontFamily: 'var(--font-mono)' }}>{stats.min}</span> –{' '}
+                      <span className="t-text-secondary" style={{ fontFamily: 'var(--font-mono)' }}>{stats.max}</span>
                     </span>
                   </div>
                 </div>
@@ -217,8 +223,8 @@ export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: A
                     </>
                   ) : (
                     <>
-                      <Minus className="w-4 h-4 text-slate-500" />
-                      <span className="text-xs font-semibold text-slate-500">— Stable</span>
+                      <Minus className="w-4 h-4 t-text-dim" />
+                      <span className="text-xs font-semibold t-text-dim">— Stable</span>
                     </>
                   )}
                 </div>
@@ -231,8 +237,8 @@ export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: A
                     <defs>
                       {/* Rich multi-stop gradient fill */}
                       <linearGradient id={config.gradientId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={config.color} stopOpacity={0.35} />
-                        <stop offset="40%" stopColor={config.color} stopOpacity={0.15} />
+                        <stop offset="0%" stopColor={config.color} stopOpacity={theme === 'light' ? 0.25 : 0.35} />
+                        <stop offset="40%" stopColor={config.color} stopOpacity={theme === 'light' ? 0.1 : 0.15} />
                         <stop offset="100%" stopColor={config.color} stopOpacity={0.02} />
                       </linearGradient>
                       {/* Line glow filter */}
@@ -247,19 +253,19 @@ export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: A
 
                     <CartesianGrid
                       strokeDasharray="3 3"
-                      stroke="rgba(100,116,139,0.08)"
+                      stroke={chartGridColor}
                       vertical={false}
                     />
                     <XAxis
                       dataKey="time"
-                      tick={{ fontSize: 10, fill: '#475569' }}
-                      axisLine={{ stroke: 'rgba(100,116,139,0.12)' }}
+                      tick={{ fontSize: 10, fill: chartTickColor }}
+                      axisLine={{ stroke: chartAxisColor }}
                       tickLine={false}
                       tickMargin={8}
                     />
                     <YAxis
-                      tick={{ fontSize: 10, fill: '#475569' }}
-                      axisLine={{ stroke: 'rgba(100,116,139,0.12)' }}
+                      tick={{ fontSize: 10, fill: chartTickColor }}
+                      axisLine={{ stroke: chartAxisColor }}
                       tickLine={false}
                       tickMargin={4}
                     />
@@ -344,32 +350,32 @@ export default function AnalyticsPage({ historicalData, realtimeBuffer = [] }: A
               )}
 
               {/* Stats Footer */}
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-800/50">
+              <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid var(--t-border)' }}>
                 <div className="flex items-center gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-600 uppercase">Min</span>
+                    <span className="text-[10px] uppercase t-text-faint">Min</span>
                     <p className="text-xs font-semibold text-cyan-400" style={{ fontFamily: 'var(--font-mono)' }}>
                       {stats.min} {config.unit}
                     </p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-600 uppercase">Max</span>
+                    <span className="text-[10px] uppercase t-text-faint">Max</span>
                     <p className="text-xs font-semibold text-amber-400" style={{ fontFamily: 'var(--font-mono)' }}>
                       {stats.max} {config.unit}
                     </p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-600 uppercase">Avg</span>
-                    <p className="text-xs font-semibold text-slate-300" style={{ fontFamily: 'var(--font-mono)' }}>
+                    <span className="text-[10px] uppercase t-text-faint">Avg</span>
+                    <p className="text-xs font-semibold t-text-secondary" style={{ fontFamily: 'var(--font-mono)' }}>
                       {stats.avg} {config.unit}
                     </p>
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-600 uppercase">Rate of Change</span>
+                  <span className="text-[10px] uppercase t-text-faint">Rate of Change</span>
                   <p
                     className={`text-xs font-semibold ${
-                      stats.rateOfChange > 0 ? 'text-red-400' : stats.rateOfChange < 0 ? 'text-emerald-400' : 'text-slate-500'
+                      stats.rateOfChange > 0 ? 'text-red-400' : stats.rateOfChange < 0 ? 'text-emerald-400' : 't-text-dim'
                     }`}
                     style={{ fontFamily: 'var(--font-mono)' }}
                   >
