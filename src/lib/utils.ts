@@ -68,11 +68,11 @@ export function detectFaults(data: SensorData): FaultStatus[] {
     faults.push({ sensor: 'current_a', status: 'normal', message: 'Current normal (0–12A)' });
   }
 
-  // Vibration: Normal <1.2, Warning 1.2–2.5, Critical >2.5
+  // Vibration (baseline-removed from firmware): Normal ≤0.06, Warning 0.06–0.15, Critical >0.15
   const absVib = Math.abs(vib);
-  if (absVib > 2.5) {
+  if (absVib > 0.15) {
     faults.push({ sensor: 'vibration', status: 'critical', message: `Abnormal vibration detected (${vib.toFixed(2)}g)` });
-  } else if (absVib > 1.2) {
+  } else if (absVib > 0.06) {
     faults.push({ sensor: 'vibration', status: 'warning', message: `Vibration elevated (${vib.toFixed(2)}g)` });
   } else {
     faults.push({ sensor: 'vibration', status: 'normal', message: `Vibration normal (${vib.toFixed(2)}g)` });
@@ -113,9 +113,9 @@ export function calculateHealthScore(data: SensorData): number {
   if (data.current_a > 15) score -= 20;
   else if (data.current_a > 12) score -= 8;
 
-  // Vibration penalty
-  if (absVib > 2.5) score -= 20;
-  else if (absVib > 1.2) score -= 10;
+  // Vibration penalty (baseline-removed firmware values)
+  if (absVib > 0.15) score -= 20;
+  else if (absVib > 0.06) score -= 10;
 
   return Math.max(0, Math.min(100, score));
 }
@@ -289,5 +289,5 @@ export const thresholdConfig: Record<string, { warning: number; critical: number
   gas_ppm: { warning: 300, critical: 400 },
   voltage_v: { warningLow: 220, warning: 240, criticalLow: 200, critical: 250 },
   current_a: { warning: 12, critical: 15 },
-  vibration: { warning: 1.2, critical: 2.5 },
+  vibration: { warning: 0.06, critical: 0.15 },
 };

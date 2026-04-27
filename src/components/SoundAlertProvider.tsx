@@ -22,7 +22,7 @@ interface SoundAlertProviderProps {
   systemStatus: SystemStatus;
 }
 
-// Generate alert beep using Web Audio API (no external files needed)
+// ── Web Audio beep generator ─────────────────────────────────────────────
 function playAlertSound(type: 'critical' | 'warning') {
   try {
     const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
@@ -69,7 +69,7 @@ function playAlertSound(type: 'critical' | 'warning') {
   }
 }
 
-// Speak a voice alert using Web Speech API
+// ── Web Speech voice announcement ────────────────────────────────────────
 function speakAlert(message: string) {
   try {
     if (!('speechSynthesis' in window)) return;
@@ -89,12 +89,22 @@ function speakAlert(message: string) {
   }
 }
 
+// ── Provider Component ───────────────────────────────────────────────────
 export default function SoundAlertProvider({ children, systemStatus }: SoundAlertProviderProps) {
   const [isMuted, setIsMuted] = useState(false);
-  const previousStatusRef = useRef<SystemStatus>(systemStatus);
-  const hasInteractedRef = useRef(false);
+
+  // Track whether an alert is currently active (playing state)
+  // This prevents repeated triggering on every re-render while status stays critical.
+  const isAlertActiveRef = useRef(false);
+
+  // Track whether the component has completed its initial mount.
+  // We skip the very first effect run so that a page-load into a critical state
+  // still triggers the alert on the NEXT status evaluation (after the first render).
+  const isFirstRenderRef = useRef(true);
 
   // Track user interaction (required for Web Audio API autoplay policy)
+  const hasInteractedRef = useRef(false);
+
   useEffect(() => {
     const handleInteraction = () => {
       hasInteractedRef.current = true;
@@ -113,29 +123,65 @@ export default function SoundAlertProvider({ children, systemStatus }: SoundAler
     if (saved === 'true') setIsMuted(true);
   }, []);
 
-  // Sound + Voice trigger: fires only when status CHANGES
+  // ── Core alert logic ─────────────────────────────────────────────────
+  // Rules:
+  //   • Play sound + voice ONCE when system enters critical and no alert is active.
+  //   • When system returns to healthy/normal (no critical), mark alert inactive.
+  //   • Re-trigger only on a new normal → critical transition.
+  //   • Do NOT replay on every render while status stays the same.
   useEffect(() => {
-    const prevStatus = previousStatusRef.current;
-    previousStatusRef.current = systemStatus;
-
-    // Only trigger on state transition, not on initial load or same state
-    if (prevStatus === systemStatus) return;
-    if (isMuted) return;
-    if (!hasInteractedRef.current) return;
-
-    if (systemStatus === 'critical') {
-      playAlertSound('critical');
-      // Voice announcement after a short delay so beep plays first
-      setTimeout(() => {
-        speakAlert('Warning. Critical alert detected. Immediate attention required.');
-      }, 600);
-    } else if (systemStatus === 'warning') {
-      playAlertSound('warning');
-      setTimeout(() => {
-        speakAlert('Caution. System warning detected. Please check sensor readings.');
-      }, 500);
+    // Skip the very first render so that the initial data load is treated
+    // as the baseline. The next status update will be compared against it.
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      // If we load straight into critical, arm the alert for immediate firing
+      // by NOT setting isAlertActiveRef.  This way the second effect run
+      // (triggered by the next poll or status change) will fire the alert.
+      return;
     }
-    // No sound when returning to normal ('healthy')
+
+    const isCritical = systemStatus === 'critical';
+    const isWarning = systemStatus === 'warning';
+
+    // ── CRITICAL detected & alert not already playing ──
+    if (isCritical && !isAlertActiveRef.current) {
+      isAlertActiveRef.current = true;
+
+      if (!isMuted && hasInteractedRef.current) {
+        playAlertSound('critical');
+        // Voice announcement after a short delay so beep plays first
+        setTimeout(() => {
+          speakAlert('Warning. Critical alert detected. Immediate attention required.');
+        }, 600);
+      }
+    }
+
+    // ── WARNING (non-critical) & alert not already playing ──
+    if (isWarning && !isCritical && !isAlertActiveRef.current) {
+      // We don't set isAlertActiveRef for warnings — they are one-shot chimes
+      // that don't block future critical alerts.
+      if (!isMuted && hasInteractedRef.current) {
+        playAlertSound('warning');
+        setTimeout(() => {
+          speakAlert('Caution. System warning detected. Please check sensor readings.');
+        }, 500);
+      }
+    }
+
+    // ── System returned to HEALTHY — reset the alert gate ──
+    if (!isCritical && !isWarning && isAlertActiveRef.current) {
+      isAlertActiveRef.current = false;
+
+      // Stop any ongoing speech
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    // Also reset if we drop from critical to warning
+    if (!isCritical && isAlertActiveRef.current) {
+      isAlertActiveRef.current = false;
+    }
   }, [systemStatus, isMuted]);
 
   const toggleMute = useCallback(() => {
