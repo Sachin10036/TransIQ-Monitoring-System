@@ -340,27 +340,31 @@ export function getImmediateActions(data: SensorData): ImmediateAction[] {
     });
   }
 
-  // ── GAS (MQ2) ──────────────────────────────────────────────────────────
+  // ── GAS (MQ2) — Transformer Oil Tank Vent Monitoring ─────────────────
   if (data.gas_ppm > 400) {
     actions.push({
       type: 'gas',
       level: 'CRITICAL',
       actions: [
-        'Evacuate area immediately',
-        'Check for gas leakage at all junctions',
-        'Turn off all electrical sources',
+        'Reduce transformer load immediately',
+        'Inspect for internal faults (overheating, winding insulation failure, or arcing)',
+        'Perform urgent DGA and oil quality testing',
+        'Check conservator, breather, and vent system for abnormal discharge',
+        'Prepare for controlled shutdown if gas levels continue rising',
       ],
-      reason: 'Gas concentration exceeds safe limit — risk of explosion, toxic exposure, or fire hazard.',
+      reason: 'Abnormal gas release from vent indicates internal oil decomposition due to thermal or electrical faults. If ignored, it can lead to insulation failure, transformer damage, or catastrophic failure.',
     });
   } else if (data.gas_ppm >= 300) {
     actions.push({
       type: 'gas',
       level: 'WARNING',
       actions: [
-        'Ensure adequate ventilation in the area',
-        'Inspect nearby gas lines and seals',
+        'Inspect silica gel breather condition and replace if saturated',
+        'Check oil temperature and loading conditions',
+        'Schedule Dissolved Gas Analysis (DGA) test',
+        'Monitor gas trend continuously for increase',
       ],
-      reason: 'Elevated gas levels detected. Early ventilation can prevent buildup to dangerous concentrations.',
+      reason: 'Elevated gas emission indicates possible oil degradation or minor internal fault. Early detection through DGA can prevent escalation to critical failure.',
     });
   }
 
