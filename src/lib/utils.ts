@@ -1,4 +1,4 @@
-import { SensorData, FaultStatus, Prediction, Alert, HistoricalDataPoint, SystemStatus } from './types';
+import { SensorData, FaultStatus, Prediction, Alert, HistoricalDataPoint, SystemStatus, ImmediateAction } from './types';
 
 // ── Enrich SensorData ────────────────────────────────────────────────────
 /**
@@ -280,6 +280,180 @@ export function formatTimestamp(ts: string): string {
   } catch {
     return ts;
   }
+}
+
+// ── Immediate Action Recommendations ─────────────────────────────────────
+/**
+ * Analyze current sensor readings and return real-time actionable suggestions.
+ * Uses rule-based + value-based logic to determine severity and recommend
+ * practical, industry-ready actions.
+ */
+export function getImmediateActions(data: SensorData): ImmediateAction[] {
+  const actions: ImmediateAction[] = [];
+  const absVib = Math.abs(data.vibration);
+
+  // ── TEMPERATURE ────────────────────────────────────────────────────────
+  if (data.temperature > 60) {
+    actions.push({
+      type: 'temperature',
+      level: 'CRITICAL',
+      actions: [
+        'Shut down system immediately',
+        'Inspect cooling system / fan',
+        'Check for overload condition',
+      ],
+      reason: 'Temperature exceeds safe operating limit — risk of thermal damage, insulation failure, or fire.',
+    });
+  } else if (data.temperature >= 40) {
+    actions.push({
+      type: 'temperature',
+      level: 'WARNING',
+      actions: [
+        'Check ventilation around equipment',
+        'Monitor temperature rise over next 15 minutes',
+      ],
+      reason: 'Temperature is rising above normal operating range. Continued increase may trigger critical shutdown.',
+    });
+  }
+
+  // ── VOLTAGE ────────────────────────────────────────────────────────────
+  if (data.voltage_v < 200 || data.voltage_v > 260) {
+    actions.push({
+      type: 'voltage',
+      level: 'CRITICAL',
+      actions: [
+        'Disconnect sensitive equipment immediately',
+        'Check power supply or voltage regulator',
+        'Use a voltage stabilizer',
+      ],
+      reason: 'Voltage is far outside safe range (220–240V) — risk of equipment damage, fire, or electrical failure.',
+    });
+  } else if (data.voltage_v < 220 || data.voltage_v > 240) {
+    actions.push({
+      type: 'voltage',
+      level: 'WARNING',
+      actions: [
+        'Monitor voltage for next 10–15 minutes',
+        'Check stabilizer output',
+      ],
+      reason: 'Voltage fluctuations detected. Sustained deviation can damage sensitive electronics and reduce equipment lifespan.',
+    });
+  }
+
+  // ── GAS (MQ2) ──────────────────────────────────────────────────────────
+  if (data.gas_ppm > 400) {
+    actions.push({
+      type: 'gas',
+      level: 'CRITICAL',
+      actions: [
+        'Evacuate area immediately',
+        'Check for gas leakage at all junctions',
+        'Turn off all electrical sources',
+      ],
+      reason: 'Gas concentration exceeds safe limit — risk of explosion, toxic exposure, or fire hazard.',
+    });
+  } else if (data.gas_ppm >= 300) {
+    actions.push({
+      type: 'gas',
+      level: 'WARNING',
+      actions: [
+        'Ensure adequate ventilation in the area',
+        'Inspect nearby gas lines and seals',
+      ],
+      reason: 'Elevated gas levels detected. Early ventilation can prevent buildup to dangerous concentrations.',
+    });
+  }
+
+  // ── VIBRATION (MPU6050) ────────────────────────────────────────────────
+  if (absVib > 0.2) {
+    actions.push({
+      type: 'vibration',
+      level: 'CRITICAL',
+      actions: [
+        'Stop machinery immediately',
+        'Check for mechanical faults',
+        'Inspect bearings, alignment, and couplings',
+      ],
+      reason: 'Severe vibration detected — risk of mechanical failure, bearing damage, or structural fatigue.',
+    });
+  } else if (absVib >= 0.05) {
+    actions.push({
+      type: 'vibration',
+      level: 'WARNING',
+      actions: [
+        'Inspect mounting stability and bolt tightness',
+        'Monitor vibration frequency pattern',
+      ],
+      reason: 'Vibration exceeds baseline. Early intervention can prevent progressive mechanical wear.',
+    });
+  }
+
+  // ── CURRENT ────────────────────────────────────────────────────────────
+  if (data.current_a > 15) {
+    actions.push({
+      type: 'current',
+      level: 'CRITICAL',
+      actions: [
+        'Disconnect excessive load immediately',
+        'Inspect wiring for damage or overheating',
+        'Check circuit breaker rating',
+      ],
+      reason: 'Current draw exceeds rated capacity — risk of overheating, insulation damage, or fire.',
+    });
+  } else if (data.current_a > 12) {
+    actions.push({
+      type: 'current',
+      level: 'WARNING',
+      actions: [
+        'Check load condition and distribution',
+        'Verify wiring connections are secure',
+      ],
+      reason: 'Current approaching maximum rated capacity. Sustained high draw reduces conductor lifespan.',
+    });
+  }
+
+  // ── HUMIDITY ───────────────────────────────────────────────────────────
+  if (data.humidity > 70) {
+    actions.push({
+      type: 'humidity',
+      level: 'CRITICAL',
+      actions: [
+        'Activate dehumidifier or increase ventilation',
+        'Inspect enclosure seals for water ingress',
+        'Check for condensation on circuit boards',
+      ],
+      reason: 'Extreme humidity can cause insulation breakdown, corrosion, and short circuits.',
+    });
+  } else if (data.humidity > 60 || data.humidity < 30) {
+    actions.push({
+      type: 'humidity',
+      level: 'WARNING',
+      actions: [
+        'Monitor environmental conditions',
+        'Verify HVAC or enclosure climate control',
+      ],
+      reason: data.humidity > 60
+        ? 'Humidity above optimal range. Extended exposure risks corrosion and reduced equipment reliability.'
+        : 'Humidity below optimal range. Low humidity increases static discharge risk and material brittleness.',
+    });
+  }
+
+  return actions;
+}
+
+/**
+ * Map a sensor type from ImmediateAction to its corresponding prediction sensor key.
+ */
+export function mapActionTypeToPredictionSensor(actionType: string): string {
+  const mapping: Record<string, string> = {
+    temperature: 'temperature',
+    voltage: 'voltage_v',
+    gas: 'gas_ppm',
+    vibration: 'vibration',
+    current: 'current_a',
+    humidity: 'humidity',
+  };
+  return mapping[actionType] || actionType;
 }
 
 // ── Threshold Configs (for chart reference lines) ────────────────────────

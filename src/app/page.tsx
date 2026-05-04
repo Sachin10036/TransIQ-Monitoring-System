@@ -271,7 +271,7 @@ export default function Home() {
           />
         );
       case 'predictions':
-        return <PredictionsPage predictions={predictions} />;
+        return <PredictionsPage predictions={predictions} sensorData={sensorData} />;
       case 'alerts':
         return <AlertsPage alerts={alertHistory} faults={faults} />;
       case 'device':

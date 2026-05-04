@@ -48,3 +48,10 @@ export interface HistoricalDataPoint {
   voltage_v: number;
   vibration: number;
 }
+
+export interface ImmediateAction {
+  type: string;
+  level: 'NORMAL' | 'WARNING' | 'CRITICAL';
+  actions: string[];
+  reason: string;
+}
